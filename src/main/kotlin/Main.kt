@@ -12,6 +12,7 @@ import io.ktor.server.engine.*
 import io.ktor.server.html.*
 import io.ktor.server.http.content.*
 import io.ktor.server.netty.*
+import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
@@ -45,6 +46,12 @@ fun main(args: Array<String>) {
         install(IgnoreTrailingSlash)
         install(Sessions) {
             cookie<DiscordSession>("user_session")
+        }
+        install (StatusPages) {
+            exception<Throwable> { call: ApplicationCall, cause: Throwable ->
+                call.respond(HttpStatusCode.InternalServerError, "Ой ой!\nПроизошла непредвиденная ошибка!\nОбратитесь к администратору сайта.")
+                cause.printStackTrace()
+            }
         }
         install(Authentication) {
             oauth("discord-auth") {
@@ -298,7 +305,7 @@ fun main(args: Array<String>) {
                     call.respondHtmlTemplate(DefaultTemplate()) {
                         content {
                             h1 { +"Первый новояпонский банк" }
-                            crumbBar(listOf("Панель управления" to "/dashboard", "Счета" to "/dashboard/accounts", "Новый счёт..." to "#"))
+                            crumbBar(listOf("Панель управления" to "/dashboard", "Счета" to "/dashboard/accounts", "Новый счёт" to "#"))
                             h2 {
                                 +"Новый ${
                                     mapOf(
@@ -325,6 +332,7 @@ fun main(args: Array<String>) {
                         call.respondHtmlTemplate(DefaultTemplate()) {
                             content {
                                 h1 { +"Первый новояпонский банк" }
+                                crumbBar(listOf("Панель управления" to "/dashboard", "Счета" to "/dashboard/accounts", "Удалить счет" to "#", "Ошибка" to "#"))
                                 h2 {
                                     +"Удаление счета ${account.name} ("; code { +account._id.toHexString() };+")"
                                 }
@@ -341,6 +349,7 @@ fun main(args: Array<String>) {
                     call.respondHtmlTemplate(DefaultTemplate()) {
                         content {
                             h1 { +"Первый новояпонский банк" }
+                            crumbBar(listOf("Панель управления" to "/dashboard", "Счета" to "/dashboard/accounts", "Удалить счет" to "#"))
                             h2 {
                                 +"Удаление счета ${account.name} ("; code { +account._id.toHexString() };+")"
                             }
@@ -370,6 +379,7 @@ fun main(args: Array<String>) {
                             call.respondHtmlTemplate(DefaultTemplate()) {
                                 content {
                                     h1 { +"Первый новояпонский банк" }
+                                    crumbBar(listOf("Панель управления" to "/dashboard", "Перевод" to "/dashboard/transfer", "Ошибка" to "#"))
                                     h2 { +"Перевод" }
                                     p { +"Вы не владелец этого аккаунта!" }
                                     a(classes = "action", href = "/dashboard/transfer") { +"Вернуться..." }
@@ -379,7 +389,8 @@ fun main(args: Array<String>) {
                         }
                         val to = ObjectId(call.request.queryParameters["to"]!!)
                         val amount = (call.request.queryParameters["amount"]!!.toDouble() * 32.0).roundToLong()
-                        from.transferTo(to, amount)
+                        val message = if(!call.request.queryParameters["message"].isNullOrBlank()) call.request.queryParameters["message"] else null
+                        from.transferTo(to, amount, message)
                         call.respondRedirect("/dashboard/accounts")
                         return@get
                     }
@@ -387,6 +398,7 @@ fun main(args: Array<String>) {
                     call.respondHtmlTemplate(DefaultTemplate()) {
                         content {
                             h1 { +"Первый новояпонский банк" }
+                            crumbBar(listOf("Панель управления" to "/dashboard", "Перевод" to "#"))
                             h2 { +"Перевод" }
                             form {
                                 p {
@@ -421,7 +433,9 @@ fun main(args: Array<String>) {
                                     +" $okaneSymbol"
                                 }
                                 p {
-                                    +"Сообщение ()"
+                                    +"Сообщение (необязательно):"
+                                    br()
+                                    textArea {name = "message"}
                                 }
                                 submitInput { value = "Отправить" }
                             }
@@ -439,6 +453,7 @@ fun main(args: Array<String>) {
                     call.respondHtmlTemplate(DefaultTemplate()) {
                         content {
                             h1 { +"Первый новояпонский банк" }
+                            crumbBar(listOf("Панель управления" to "/dashboard", "Транзакции" to "#"))
                             h2 { +"Транзакции" }
                             if (transactions.isEmpty()) {
                                 p { +"У вас нет транзакций." }

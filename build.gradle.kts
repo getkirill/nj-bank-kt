@@ -24,6 +24,7 @@ dependencies {
     implementation("ch.qos.logback:logback-classic:1.4.11")
     implementation("ch.qos.logback:logback-core:1.4.11")
     implementation("org.mongodb:mongodb-driver-kotlin-coroutine:4.10.1")
+    implementation("io.ktor:ktor-server-status-pages:$ktor_version")
 
     implementation("io.ktor:ktor-client-core:$ktor_version")
     implementation("io.ktor:ktor-client-cio:$ktor_version")
