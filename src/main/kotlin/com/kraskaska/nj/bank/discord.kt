@@ -64,4 +64,6 @@ class DiscordUser(val session: DiscordSession) {
             mongoClient.getCollection<Document>("users").find(Filters.eq("uid", id)).singleOrNull()?.getBoolean("admin")
                 ?: false
         }
+
+    val loansTaken get() = accounts.map { Loan.allLinkedTo(it._id) }.flatten()
 }

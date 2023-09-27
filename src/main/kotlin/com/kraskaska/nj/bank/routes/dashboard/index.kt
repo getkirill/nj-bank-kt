@@ -5,6 +5,8 @@ import com.kraskaska.nj.bank.DiscordSession
 import com.kraskaska.nj.bank.RouteHandler
 import com.kraskaska.nj.bank.okaneSymbol
 import com.kraskaska.nj.bank.routes.dashboard.accounts.*
+import com.kraskaska.nj.bank.routes.dashboard.loan.loanIndex
+import com.kraskaska.nj.bank.routes.dashboard.loan.newLoan
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.html.*
@@ -22,6 +24,8 @@ fun Routing.configureDashboardRouting() {
         get("/dashboard/accounts/delete/{id}", deleteAccount)
         get("/dashboard/transfer", accountTransfer)
         get("/dashboard/transactions", accountTransactions)
+        get("/dashboard/loans", loanIndex)
+        get("/dashboard/loans/new", newLoan)
     }
 }
 
@@ -57,6 +61,7 @@ val dashboardHome: RouteHandler = handler@{
             a(classes = "action", href = "/dashboard/accounts") { +"Счета" }
             a(classes = "action", href = "/dashboard/transfer") { +"Перевод" }
             a(classes = "action", href = "/dashboard/transactions") { +"Транзакции" }
+            a(classes = "action", href = "/dashboard/loans") { +"Кредиты" }
         }
     }
 }

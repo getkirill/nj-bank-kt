@@ -24,17 +24,17 @@ val accountTransactions: RouteHandler = handler@{
                 p { +"У вас нет транзакций." }
             } else {
                 ul {
-                    transactions.forEach {
+                    transactions.sortedByDescending { it._id.timestamp }.forEach {
                         li {
                             if (it.from != null) {
-                                +"${Account.get(it.from)!!.name} ("
-                                code { +it.from.toHexString() }
+                                +"${Account.get(it.from)?.name ?: "[unknown account]"} ("
+                                code { +(Account.get(it.from)?._id?.toHexString() ?: "unknown") }
                                 +") "
                             }
                             +"->"
                             if (it.to != null) {
-                                +"${Account.get(it.to)!!.name} ("
-                                code { +it.to.toHexString() }
+                                +"${Account.get(it.to)?.name ?: "[unknown account]"} ("
+                                code { +(Account.get(it.to)?._id?.toHexString() ?: "unknown") }
                                 +") "
                             }
                             +" - "
