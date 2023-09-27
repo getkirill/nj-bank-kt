@@ -455,7 +455,7 @@ fun main(args: Array<String>) {
                             form {
                                 p {
                                     +"Счёт отправки: "
-                                    if (user.isAdmin) textInput(name = "from") else select {
+                                    if (user.isAdmin) textInput(name = "from") {required = true} else select {
                                         name = "from"
                                         if (availableAccounts.size < 1) {
                                             disabled = true
@@ -474,13 +474,14 @@ fun main(args: Array<String>) {
                                 }
                                 p {
                                     +"Адрес доставки: "
-                                    textInput(name = "to")
+                                    textInput(name = "to") {required = true}
                                 }
                                 p {
                                     +"Размер: "
                                     numberInput(name = "amount") {
                                         min = "0.03"
                                         step = ".01"
+                                        required = true
                                     }
                                     +" $okaneSymbol"
                                 }
