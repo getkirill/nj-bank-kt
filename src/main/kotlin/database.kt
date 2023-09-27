@@ -38,9 +38,10 @@ data class Account(val ownerId: Long, val type: AccountType, val name: String, v
         runBlocking { mongoClient.getCollection<Transaction>("transactions").insertOne(Transaction(_id, id, amount, message)) }
     }
 
-    fun deposit(amount: CurrencyPeni) {
+    fun deposit(amount: CurrencyPeni, message: (Transaction) -> String = {"пополнение счёта"}) {
+        val t = Transaction(to = _id, amount = amount).run { copy(message = message(this)) }
         runBlocking {
-            mongoClient.getCollection<Transaction>("transactions").insertOne(Transaction(to = _id, amount = amount, message = "пополнение счета"))
+            mongoClient.getCollection<Transaction>("transactions").insertOne(t)
         }
     }
 
@@ -77,4 +78,4 @@ val okaneSymbol: String = "お金"
 data class Transaction(val from: ObjectId? = null, val to: ObjectId? = null, val amount: CurrencyPeni, val message: String? = null, val _id: ObjectId = ObjectId.get())
 
 fun Iterable<Transaction>.balance(of: ObjectId): CurrencyPeni =
-    fold(0L) { acc, transaction -> if (transaction.from == of) acc - transaction.amount else if (transaction.to == of) acc + transaction.amount else acc }
+    fold(0L) { acc, transaction -> if(transaction.from == transaction.to) acc else if (transaction.from == of) acc - transaction.amount else if (transaction.to == of) acc + transaction.amount else acc }

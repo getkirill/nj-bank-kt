@@ -1,4 +1,4 @@
-import io.github.cdimascio.dotenv.Dotenv
+import com.mongodb.client.model.Filters
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -16,6 +16,8 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.runBlocking
 import kotlinx.html.*
 import org.bson.types.ObjectId
 import kotlin.math.roundToLong
@@ -47,9 +49,12 @@ fun main(args: Array<String>) {
         install(Sessions) {
             cookie<DiscordSession>("user_session")
         }
-        install (StatusPages) {
+        install(StatusPages) {
             exception<Throwable> { call: ApplicationCall, cause: Throwable ->
-                call.respond(HttpStatusCode.InternalServerError, "Ой ой!\nПроизошла непредвиденная ошибка!\nОбратитесь к администратору сайта.")
+                call.respond(
+                    HttpStatusCode.InternalServerError,
+                    "Ой ой!\nПроизошла непредвиденная ошибка!\nОбратитесь к администратору сайта."
+                )
                 cause.printStackTrace()
             }
         }
@@ -132,7 +137,6 @@ fun main(args: Array<String>) {
                 get("/admin") {
                     val session = call.sessions.get<DiscordSession>()!!
                     val user = session.toUser()
-                    println("${user.id} - ${user.isAdmin}")
                     if (!user.isAdmin) {
                         call.respondHtmlTemplate(DefaultTemplate(), HttpStatusCode.Forbidden) {
                             content {
@@ -159,13 +163,17 @@ fun main(args: Array<String>) {
                                 p { +"Количество (Peni, 1/32 okane): "; numberInput(name = "amount") { min = "0" } }
                                 submitInput { value = "Снять" }
                             }
+                            p { +"Выплатить процент всем сберегательным аккаунтам" }
+                            form(action = "/admin/pay-interest") {
+                                p { +"Процент (1%=0.01)"; numberInput(name = "percent") { min = "0"; step = "any" } }
+                                submitInput { value = "Выплатить" }
+                            }
                         }
                     }
                 }
                 get("/admin/deposit") {
                     val session = call.sessions.get<DiscordSession>()!!
                     val user = session.toUser()
-                    println("${user.id} - ${user.isAdmin}")
                     if (!user.isAdmin) {
                         call.respondRedirect("/admin")
                         return@get
@@ -194,7 +202,6 @@ fun main(args: Array<String>) {
                 get("/admin/withdraw") {
                     val session = call.sessions.get<DiscordSession>()!!
                     val user = session.toUser()
-                    println("${user.id} - ${user.isAdmin}")
                     if (!user.isAdmin) {
                         call.respondRedirect("/admin")
                         return@get
@@ -219,6 +226,25 @@ fun main(args: Array<String>) {
                             p { code { +"Balance updated: -$amount (${account.balance})" } }
                         }
                     }
+                }
+                get("/admin/pay-interest") {
+                    val session = call.sessions.get<DiscordSession>()!!
+                    val user = session.toUser()
+                    if (!user.isAdmin) {
+                        call.respondRedirect("/admin")
+                        return@get
+                    }
+                    val percent = call.request.queryParameters["percent"]?.toFloatOrNull()
+                    if (percent == null) {
+                        call.respond("Err no percent")
+                        return@get
+                    }
+                    val allSavings = runBlocking {
+                        mongoClient.getCollection<Account>("accounts")
+                            .find(Filters.eq("type", Account.AccountType.SAVINGS)).toList()
+                    }
+                    allSavings.forEach { it.deposit((it.balance * percent).toLong()) { "выплата процентов" } }
+                    call.respondRedirect("/admin")
                 }
                 get("/dashboard") {
                     val session = call.sessions.get<DiscordSession>()!!
@@ -305,7 +331,13 @@ fun main(args: Array<String>) {
                     call.respondHtmlTemplate(DefaultTemplate()) {
                         content {
                             h1 { +"Первый новояпонский банк" }
-                            crumbBar(listOf("Панель управления" to "/dashboard", "Счета" to "/dashboard/accounts", "Новый счёт" to "#"))
+                            crumbBar(
+                                listOf(
+                                    "Панель управления" to "/dashboard",
+                                    "Счета" to "/dashboard/accounts",
+                                    "Новый счёт" to "#"
+                                )
+                            )
                             h2 {
                                 +"Новый ${
                                     mapOf(
@@ -332,7 +364,14 @@ fun main(args: Array<String>) {
                         call.respondHtmlTemplate(DefaultTemplate()) {
                             content {
                                 h1 { +"Первый новояпонский банк" }
-                                crumbBar(listOf("Панель управления" to "/dashboard", "Счета" to "/dashboard/accounts", "Удалить счет" to "#", "Ошибка" to "#"))
+                                crumbBar(
+                                    listOf(
+                                        "Панель управления" to "/dashboard",
+                                        "Счета" to "/dashboard/accounts",
+                                        "Удалить счет" to "#",
+                                        "Ошибка" to "#"
+                                    )
+                                )
                                 h2 {
                                     +"Удаление счета ${account.name} ("; code { +account._id.toHexString() };+")"
                                 }
@@ -349,7 +388,13 @@ fun main(args: Array<String>) {
                     call.respondHtmlTemplate(DefaultTemplate()) {
                         content {
                             h1 { +"Первый новояпонский банк" }
-                            crumbBar(listOf("Панель управления" to "/dashboard", "Счета" to "/dashboard/accounts", "Удалить счет" to "#"))
+                            crumbBar(
+                                listOf(
+                                    "Панель управления" to "/dashboard",
+                                    "Счета" to "/dashboard/accounts",
+                                    "Удалить счет" to "#"
+                                )
+                            )
                             h2 {
                                 +"Удаление счета ${account.name} ("; code { +account._id.toHexString() };+")"
                             }
@@ -379,7 +424,13 @@ fun main(args: Array<String>) {
                             call.respondHtmlTemplate(DefaultTemplate()) {
                                 content {
                                     h1 { +"Первый новояпонский банк" }
-                                    crumbBar(listOf("Панель управления" to "/dashboard", "Перевод" to "/dashboard/transfer", "Ошибка" to "#"))
+                                    crumbBar(
+                                        listOf(
+                                            "Панель управления" to "/dashboard",
+                                            "Перевод" to "/dashboard/transfer",
+                                            "Ошибка" to "#"
+                                        )
+                                    )
                                     h2 { +"Перевод" }
                                     p { +"Вы не владелец этого аккаунта!" }
                                     a(classes = "action", href = "/dashboard/transfer") { +"Вернуться..." }
@@ -389,7 +440,8 @@ fun main(args: Array<String>) {
                         }
                         val to = ObjectId(call.request.queryParameters["to"]!!)
                         val amount = (call.request.queryParameters["amount"]!!.toDouble() * 32.0).roundToLong()
-                        val message = if(!call.request.queryParameters["message"].isNullOrBlank()) call.request.queryParameters["message"] else null
+                        val message =
+                            if (!call.request.queryParameters["message"].isNullOrBlank()) call.request.queryParameters["message"] else null
                         from.transferTo(to, amount, message)
                         call.respondRedirect("/dashboard/accounts")
                         return@get
@@ -435,7 +487,7 @@ fun main(args: Array<String>) {
                                 p {
                                     +"Сообщение (необязательно):"
                                     br()
-                                    textArea {name = "message"}
+                                    textArea { name = "message" }
                                 }
                                 submitInput { value = "Отправить" }
                             }
@@ -446,7 +498,8 @@ fun main(args: Array<String>) {
                     val session = call.sessions.get<DiscordSession>()!!
                     val user = session.toUser()
                     val transactions =
-                        user.accounts.map { it.transactions }.fold(listOf<Transaction>()) { acc, transactions -> acc + transactions }
+                        user.accounts.map { it.transactions }
+                            .fold(listOf<Transaction>()) { acc, transactions -> acc + transactions }
                             .distinctBy { it._id.toHexString() }
                             .toList()
                     val myAddresses = user.accounts.map { it._id.toHexString() }
@@ -474,12 +527,15 @@ fun main(args: Array<String>) {
                                             }
                                             +" - "
                                             span(
-                                                classes = if(myAddresses.contains(it.from?.toHexString()) && myAddresses.contains(it.to?.toHexString())) "" else if (myAddresses.contains(it.from?.toHexString())) "negative-transaction" else if (myAddresses.contains(
+                                                classes = if (myAddresses.contains(it.from?.toHexString()) && myAddresses.contains(
+                                                        it.to?.toHexString()
+                                                    )
+                                                ) "" else if (myAddresses.contains(it.from?.toHexString())) "negative-transaction" else if (myAddresses.contains(
                                                         it.to?.toHexString()
                                                     )
                                                 ) "positive-transaction" else ""
                                             ) { +"${"%.2f".format(it.amount / 32.0)} $okaneSymbol" }
-                                            if(it.message != null) +" - ${it.message}"
+                                            if (it.message != null) +" - ${it.message}"
                                         }
                                     }
                                 }
