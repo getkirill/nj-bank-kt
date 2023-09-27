@@ -41,7 +41,7 @@ class DefaultTemplate : Template<HTML> {
 }
 
 fun main(args: Array<String>) {
-    embeddedServer(Netty, port = 8080) {
+    embeddedServer(Netty, port = env["PORT"].toInt()) {
         install(IgnoreTrailingSlash)
         install(Sessions) {
             cookie<DiscordSession>("user_session")
@@ -235,6 +235,7 @@ fun main(args: Array<String>) {
                     call.respondHtmlTemplate(DefaultTemplate()) {
                         content {
                             h1 { +"Первый новояпонский банк" }
+                            crumbBar(listOf("Панель управления" to "/dashboard", "Счета" to "#"))
                             h2 { +"Cчета" }
                             a(
                                 classes = "action",
@@ -297,6 +298,7 @@ fun main(args: Array<String>) {
                     call.respondHtmlTemplate(DefaultTemplate()) {
                         content {
                             h1 { +"Первый новояпонский банк" }
+                            crumbBar(listOf("Панель управления" to "/dashboard", "Счета" to "/dashboard/accounts", "Новый счёт..." to "#"))
                             h2 {
                                 +"Новый ${
                                     mapOf(
@@ -417,6 +419,9 @@ fun main(args: Array<String>) {
                                         step = ".01"
                                     }
                                     +" $okaneSymbol"
+                                }
+                                p {
+                                    +"Сообщение ()"
                                 }
                                 submitInput { value = "Отправить" }
                             }

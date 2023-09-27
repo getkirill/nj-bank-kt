@@ -2,9 +2,7 @@ import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import kotlinx.css.CssBuilder
-import kotlinx.html.HEAD
-import kotlinx.html.HTML
-import kotlinx.html.link
+import kotlinx.html.*
 
 fun HTML.insertCopyright() {
     comment("Made with love and Ktor")
@@ -18,4 +16,8 @@ suspend inline fun ApplicationCall.respondCss(builder: CssBuilder.() -> Unit) {
 
 fun HEAD.linkToStylesheet() {
     link(rel = "stylesheet", href = "/style.css")
+}
+
+fun FlowContent.crumbBar(history: List<Pair<String, String>>) {
+    div { history.forEach{ a(href = it.second) {+it.first}; +" / " } }
 }
