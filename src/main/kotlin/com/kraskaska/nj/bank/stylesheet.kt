@@ -1,3 +1,5 @@
+package com.kraskaska.nj.bank
+
 import kotlinx.css.*
 import kotlinx.css.properties.TextDecoration
 import kotlinx.css.properties.TextDecorationLine

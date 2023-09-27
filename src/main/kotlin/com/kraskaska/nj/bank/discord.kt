@@ -1,3 +1,5 @@
+package com.kraskaska.nj.bank
+
 import com.mongodb.client.model.Filters
 import io.ktor.client.call.*
 import io.ktor.client.request.*

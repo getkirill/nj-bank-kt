@@ -45,5 +45,5 @@ kotlin {
 }
 
 application {
-    mainClass.set("MainKt")
+    mainClass.set("com.kraskaska.nj.bank.MainKt")
 }

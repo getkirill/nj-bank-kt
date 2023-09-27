@@ -1,3 +1,5 @@
+package com.kraskaska.nj.bank
+
 import com.mongodb.client.model.Filters
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import kotlinx.coroutines.flow.singleOrNull
