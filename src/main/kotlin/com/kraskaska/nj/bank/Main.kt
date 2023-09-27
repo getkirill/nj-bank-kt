@@ -46,6 +46,24 @@ class DefaultTemplate : Template<HTML> {
     }
 }
 
+fun Routing.configureAuth() {
+    authenticate("discord-auth", "session-auth") {
+        get("/login") {
+            call.respondRedirect("/")
+        }
+        get("/login/callback") {
+            val principal: OAuthAccessTokenResponse.OAuth2? = call.principal()
+            call.sessions.set(DiscordSession(principal!!.state!!, principal.accessToken))
+//                    call.respond(principal.state!!)
+            call.respondRedirect("/")
+        }
+    }
+    get("/logout") {
+        call.sessions.clear<DiscordSession>()
+        call.respondRedirect("/")
+    }
+}
+
 fun main(args: Array<String>) {
     embeddedServer(Netty, port = env["PORT"].toInt()) {
         install(IgnoreTrailingSlash)
@@ -95,24 +113,10 @@ fun main(args: Array<String>) {
             }
         }
         routing {
-            configureDashboardRouting()
-            configureAdminRouting()
             staticResources("/static", "assets")
-            authenticate("discord-auth", "session-auth") {
-                get("/login") {
-                    call.respondRedirect("/")
-                }
-                get("/login/callback") {
-                    val principal: OAuthAccessTokenResponse.OAuth2? = call.principal()
-                    call.sessions.set(DiscordSession(principal!!.state!!, principal.accessToken))
-//                    call.respond(principal.state!!)
-                    call.respondRedirect("/")
-                }
-            }
-            get("/logout") {
-                call.sessions.clear<DiscordSession>()
-                call.respondRedirect("/")
-            }
+            configureAuth()
+            configureAdminRouting()
+            configureDashboardRouting()
             get("/style.css") {
                 call.respondCss(stylesheet)
             }

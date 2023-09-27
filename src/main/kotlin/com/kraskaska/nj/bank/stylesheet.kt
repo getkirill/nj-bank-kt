@@ -36,4 +36,7 @@ val stylesheet: CssBuilder.() -> Unit = {
     rule(".positive-transaction") {
         color = Color.blue
     }
+    rule(".inline-block") {
+        display = Display.inlineBlock
+    }
 }
