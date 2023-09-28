@@ -15,7 +15,8 @@ val loanIndex: RouteHandler = handler@{
             h1 { +"Первый новояпонский банк" }
             crumbBar(listOf("Панель управления" to "/dashboard", "Кредиты" to "#"))
             h2 { +"Кредиты" }
-            a(href = "/dashboard/loans/new", classes = "action") { +"Оформить кредит" }
+//            a(href = "/dashboard/loans/new", classes = "action") { +"Оформить кредит" }
+            p { +"Оформить кредит можно в ближайшем отделении банка" }
             if (user.loansTaken.isEmpty()) {
                 p { +"Нет непогашенных кредитов." }
             } else {

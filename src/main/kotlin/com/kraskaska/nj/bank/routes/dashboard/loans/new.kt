@@ -11,6 +11,7 @@ import org.bson.types.ObjectId
 import kotlin.math.roundToLong
 
 val newLoan: RouteHandler = handler@{
+    TODO("THIS IS NOT THE WAY")
     val session = call.sessions.get<DiscordSession>()!!
     val user = session.toUser()
     if (call.request.queryParameters["amount"] != null && call.request.queryParameters["interest"] != null && call.request.queryParameters["duration"] != null && call.request.queryParameters["account"] != null && call.request.queryParameters["account"] != "no-account") {

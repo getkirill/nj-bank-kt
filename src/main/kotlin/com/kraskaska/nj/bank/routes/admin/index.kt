@@ -56,6 +56,12 @@ val adminHome: RouteHandler = handler@{
                 p { +"Процент (1%=0.01)"; numberInput(name = "percent") { min = "0"; step = "any" } }
                 submitInput { value = "Выплатить" }
             }
+            h2 { +"Inspection" }
+            p { +"you give uid, i give you all the shit i know" }
+            form(action = "/admin/inspection") {
+                p { +"uid "; textInput(name = "uid") }
+                submitInput()
+            }
         }
     }
 }

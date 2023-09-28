@@ -17,14 +17,14 @@ val newAccount: RouteHandler = handler@{
         return@handler
     }
     if (call.request.queryParameters["account-name"] != null) {
-        if (user.isAdmin && call.request.queryParameters["of"] != null)
-            Account.create(
-                call.request.queryParameters["of"]!!.toLong(), mapOf(
-                    "checking" to Account.AccountType.CHECKING,
-                    "savings" to Account.AccountType.SAVINGS
-                )[call.parameters["type"]]!!, call.request.queryParameters["account-name"]!!
-            )
-        else
+//        if (user.isAdmin && call.request.queryParameters["of"] != null)
+//            Account.create(
+//                call.request.queryParameters["of"]!!.toLong(), mapOf(
+//                    "checking" to Account.AccountType.CHECKING,
+//                    "savings" to Account.AccountType.SAVINGS
+//                )[call.parameters["type"]]!!, call.request.queryParameters["account-name"]!!
+//            )
+//        else
             user.createAccount(
                 mapOf(
                     "checking" to Account.AccountType.CHECKING,
