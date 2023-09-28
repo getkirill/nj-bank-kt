@@ -44,7 +44,7 @@ val dashboardHome: RouteHandler = handler@{
     call.respondHtmlTemplate(DefaultTemplate()) {
         content {
             h1 { +"Первый новояпонский банк" }
-            p { +user.name }
+            p { +user.session.name }
             p { +"Баланс: ${"%.2f".format(user.balance / 32.0)} $okaneSymbol" }
             if(user.accounts.toList().size > 1) form {
                 p {

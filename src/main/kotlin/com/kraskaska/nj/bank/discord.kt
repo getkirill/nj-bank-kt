@@ -14,24 +14,36 @@ import org.bson.types.ObjectId
 
 data class DiscordSession(val state: String, val token: String) : Principal {
     fun toUser() = DiscordUser(this)
+    val oauthMe by lazy {
+        runBlocking {
+            httpClient.get("https://discord.com/api/oauth2/@me") { bearerAuth(token) }.body<JsonObject>()
+        }
+    }
+    val username: String get() = oauthMe["user"]!!.jsonObject["username"]!!.jsonPrimitive.content
+    val displayName: String? get() = oauthMe["user"]!!.jsonObject["global_name"]?.jsonPrimitive?.content
+    val tag: Int get() = oauthMe["user"]!!.jsonObject["discriminator"]!!.jsonPrimitive.int
+
+    val name: String get() = if (displayName != null) displayName!! else if (tag == 0) username else "${username}#${tag}"
+    val id: Long get() = oauthMe["user"]!!.jsonObject["id"]!!.jsonPrimitive.long
 }
 
-class DiscordUser(val session: DiscordSession) {
+class DiscordUser(val session: DiscordSession) : User(session.id)
 
-    val userDocument get() = runBlocking { mongoClient.getCollection<Document>("users").find(Filters.eq("uid", id)).singleOrNull() }
+open class User(val id: Long) {
+    val userDocument
+        get() = runBlocking {
+            mongoClient.getCollection<Document>("users").find(Filters.eq("uid", id)).singleOrNull()
+        }
     var defaultAccount: ObjectId?
         get() = userDocument!!.getObjectId("default_account") ?: accounts.firstOrNull()?._id
         set(value) = runBlocking {
-            mongoClient.getCollection<Document>("users").findOneAndUpdate(Filters.eq("uid", id), Updates.set("default_account", value))
+            mongoClient.getCollection<Document>("users")
+                .findOneAndUpdate(Filters.eq("uid", id), Updates.set("default_account", value))
         }
-    val oauthMe by lazy {
-        runBlocking {
-            httpClient.get("https://discord.com/api/oauth2/@me") { bearerAuth(session.token) }.body<JsonObject>()
-        }
-    }
+
     init {
         val user = userDocument
-        if(user == null) {
+        if (user == null) {
             val userDoc = Document()
             userDoc["uid"] = id
             runBlocking { mongoClient.getCollection<Document>("users").insertOne(userDoc) }
@@ -40,14 +52,6 @@ class DiscordUser(val session: DiscordSession) {
 //            defaultAccount = accounts.first()._id
 //        }
     }
-
-
-    val id: Long get() = oauthMe["user"]!!.jsonObject["id"]!!.jsonPrimitive.long
-    val username: String get() = oauthMe["user"]!!.jsonObject["username"]!!.jsonPrimitive.content
-    val displayName: String? get() = oauthMe["user"]!!.jsonObject["global_name"]?.jsonPrimitive?.content
-    val tag: Int get() = oauthMe["user"]!!.jsonObject["discriminator"]!!.jsonPrimitive.int
-
-    val name: String get() = if (displayName != null) displayName!! else if (tag == 0) username else "${username}#${tag}"
 
     val accounts: Iterable<Account>
         get() = runBlocking {

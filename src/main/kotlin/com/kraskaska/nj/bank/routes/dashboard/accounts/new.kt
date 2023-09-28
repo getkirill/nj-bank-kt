@@ -12,8 +12,7 @@ val newAccount: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
     val user = session.toUser()
     if (!listOf("checking", "savings").contains(call.parameters["type"])) {
-        call.response.status(HttpStatusCode.NotFound)
-        call.respond("Not found.")
+        call.respond(HttpStatusCode.NotFound, "Not found.")
         return@handler
     }
     if (call.request.queryParameters["account-name"] != null) {
