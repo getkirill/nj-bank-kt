@@ -21,6 +21,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
 import kotlinx.html.*
+import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -65,8 +66,10 @@ fun Routing.configureAuth() {
 }
 
 fun main(args: Array<String>) {
+    val logger = LoggerFactory.getLogger("main")
     if ((env["FORCE_CLOCK"]?.toLongOrNull() ?: -1) >= 0) {
         clock = Clock.fixed(Instant.ofEpochMilli(env["FORCE_CLOCK"]!!.toLong()), ZoneId.of("UTC"))
+        logger.info("Clock forced to ${env["FORCE_CLOCK"]!!.toLong()}")
     }
     embeddedServer(Netty, port = env["PORT"].toInt()) {
         install(IgnoreTrailingSlash)

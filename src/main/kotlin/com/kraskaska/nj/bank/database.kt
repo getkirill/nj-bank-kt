@@ -106,31 +106,37 @@ data class Loan(
     val amount: CurrencyPeni,
     val interest: Double,
     val expiryDate: Long,
-    val expiredInterest: Double = interest*interest,
+    val expiredInterest: Double = interest * interest,
 ) {
     fun moneyToBePaidAt(timestamp: Long): Long {
-        return when {
-            timestamp <= expiryDate -> (amount * interest * ((timestamp - _id.date.time).toDuration(DurationUnit.MILLISECONDS).inWholeDays / (expiryDate - _id.date.time).toDuration(
+        val expiryProgress =
+            (timestamp - _id.date.time).toDuration(DurationUnit.MILLISECONDS).inWholeDays.toDouble() / (expiryDate - _id.date.time).toDuration(
                 DurationUnit.MILLISECONDS
-            ).inWholeDays)).roundToLong()
-            timestamp > expiryDate -> (amount * interest + (amount * interest * (Math.pow(
-                expiredInterest,
-                (timestamp - expiryDate).toDuration(DurationUnit.MILLISECONDS).inWholeDays.toDouble()
-            )))).roundToLong()
+            ).inWholeDays
+        val overExpiryDays = (timestamp - expiryDate).toDuration(DurationUnit.MILLISECONDS).inWholeDays.toDouble()
+        println("Progress: ${expiryProgress * 100}%")
+        return when {
+            timestamp <= expiryDate -> (amount * (1 + interest) * expiryProgress).roundToLong()
+            timestamp > expiryDate -> (amount * (1 + interest + Math.pow(
+                1 + expiredInterest,
+                overExpiryDays
+            ))).roundToLong()
+
             else -> TODO()
         }
     }
 
-    val paidOffAt: Long? get() {
-        val acc = Account.get(loanAccount)!!
-        val lastTransaction = acc.transactions.maxByOrNull { it._id.date.time } ?: return null
-        val balance = acc.balance
-        return if(balance < moneyToBePaidAt(lastTransaction._id.date.time) || balance < amount * interest) {
-            null
-        } else {
-            lastTransaction._id.date.time
+    val paidOffAt: Long?
+        get() {
+            val acc = Account.get(loanAccount)!!
+            val lastTransaction = acc.transactions.maxByOrNull { it._id.date.time } ?: return null
+            val balance = acc.balance
+            return if (balance < moneyToBePaidAt(lastTransaction._id.date.time) || balance < amount * (1 + interest)) {
+                null
+            } else {
+                lastTransaction._id.date.time
+            }
         }
-    }
     val isPaidOff get() = paidOffAt != null
 
     companion object {
@@ -140,7 +146,10 @@ data class Loan(
     }
 
     fun submit() = runBlocking {
-        Account.get(payerAccount)!!.deposit(amount) {"пополнение кредита"}
+        Account.get(loanAccount)!!.run {
+            deposit(amount) { "loan:${_id.toHexString()}" }
+            transferTo(payerAccount, amount, "пополнение кредита")
+        }
         mongoClient.getCollection<Loan>("loans").insertOne(this@Loan)
     }
 }
