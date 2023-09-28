@@ -1,8 +1,8 @@
 package com.kraskaska.nj.bank
 
+import com.kraskaska.nj.bank.clock.clock
 import com.kraskaska.nj.bank.routes.admin.configureAdminRouting
 import com.kraskaska.nj.bank.routes.dashboard.configureDashboardRouting
-import com.mongodb.client.model.Filters
 import io.github.cdimascio.dotenv.dotenv
 import io.ktor.client.*
 import io.ktor.client.engine.cio.*
@@ -20,10 +20,10 @@ import io.ktor.server.plugins.statuspages.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
 import kotlinx.html.*
-import org.bson.types.ObjectId
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneId
 
 val env = dotenv { ignoreIfMissing = true }
 
@@ -65,6 +65,9 @@ fun Routing.configureAuth() {
 }
 
 fun main(args: Array<String>) {
+    if ((env["FORCE_CLOCK"]?.toLongOrNull() ?: -1) >= 0) {
+        clock = Clock.fixed(Instant.ofEpochMilli(env["FORCE_CLOCK"]!!.toLong()), ZoneId.of("UTC"))
+    }
     embeddedServer(Netty, port = env["PORT"].toInt()) {
         install(IgnoreTrailingSlash)
         install(Sessions) {
@@ -72,9 +75,13 @@ fun main(args: Array<String>) {
         }
         install(StatusPages) {
             exception<Throwable> { call: ApplicationCall, cause: Throwable ->
+                val uuid = saveErrorForInspection(cause, call.sessions.get())
                 call.respond(
                     HttpStatusCode.InternalServerError,
-                    "Ой ой!\nПроизошла непредвиденная ошибка!\nОбратитесь к администратору сайта."
+                    "Ой ой!\n" +
+                            "Произошла непредвиденная ошибка!\n" +
+                            "Обратитесь к администратору сайта.\n" +
+                            "Если вас спросят, код ошибки: $uuid"
                 )
                 cause.printStackTrace()
             }
@@ -141,6 +148,9 @@ fun main(args: Array<String>) {
                         }
                     }
                 }
+            }
+            get("/debug/exception") {
+                throw Exception("debug!", Exception("'cause"))
             }
         }
     }.start(wait = true)

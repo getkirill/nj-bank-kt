@@ -1,6 +1,7 @@
 package com.kraskaska.nj.bank.routes.dashboard.loan
 
 import com.kraskaska.nj.bank.*
+import com.kraskaska.nj.bank.clock.clock
 import io.ktor.server.application.*
 import io.ktor.server.html.*
 import io.ktor.server.response.*
@@ -17,7 +18,7 @@ val newLoan: RouteHandler = handler@{
             payerAccount = ObjectId(call.request.queryParameters["account"]),
             amount = (call.request.queryParameters["amount"]!!.toDouble() * 32).roundToLong(),
             interest = call.request.queryParameters["interest"]!!.toLong() / 100.0,
-            expiryDate = System.currentTimeMillis() + (call.request.queryParameters["duration"]!!.toLong() * 24 * 60 * 60 * 1000)
+            expiryDate = clock.millis() + (call.request.queryParameters["duration"]!!.toLong() * 24 * 60 * 60 * 1000)
         )
         loan.submit()
         call.respondRedirect("/dashboard/loans")

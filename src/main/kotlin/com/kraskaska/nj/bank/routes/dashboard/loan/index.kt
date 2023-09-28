@@ -1,6 +1,7 @@
 package com.kraskaska.nj.bank.routes.dashboard.loan
 
 import com.kraskaska.nj.bank.*
+import com.kraskaska.nj.bank.clock.clock
 import io.ktor.server.application.*
 import io.ktor.server.html.*
 import io.ktor.server.sessions.*
@@ -21,7 +22,7 @@ val loanIndex: RouteHandler = handler@{
                 ul {
                     li {+"ID кредита - аккаунт получивший кредит - сумма кредита - оплачено/сумма сегодня - ставка"}
                     user.loansTaken.filter { !it.isPaidOff }.forEach {
-                        li { +"${it._id.toHexString()} - ${Account.get(it.payerAccount)!!.name} ("; code{+it.payerAccount.toHexString() }; +") - ${"%.2f".format(it.amount / 32.0)} $okaneSymbol - ${"%.2f".format(Account.get(it.loanAccount)!!.balance / 32.0)}/${"%.2f".format(it.moneyToBePaidAt(System.currentTimeMillis()) / 32.0)} $okaneSymbol - ставка ${"%.1f".format(it.interest*100)}%" }
+                        li { +"${it._id.toHexString()} - ${Account.get(it.payerAccount)!!.name} ("; code{+it.payerAccount.toHexString() }; +") - ${"%.2f".format(it.amount / 32.0)} $okaneSymbol - ${"%.2f".format(Account.get(it.loanAccount)!!.balance / 32.0)}/${"%.2f".format(it.moneyToBePaidAt(clock.millis()) / 32.0)} $okaneSymbol - ставка ${"%.1f".format(it.interest*100)}%" }
                     }
                 }
             }
