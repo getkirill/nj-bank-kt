@@ -1,4 +1,4 @@
-package com.kraskaska.nj.bank.routes.dashboard.accounts
+package com.kraskaska.nj.bank.routes.dashboard
 
 import com.kraskaska.nj.bank.*
 import io.ktor.server.application.*
@@ -9,12 +9,9 @@ import kotlinx.html.*
 val accountTransactions: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
     val user = session.toUser()
-    val transactions =
-        user.accounts.map { it.transactions }
-            .fold(listOf<Transaction>()) { acc, transactions -> acc + transactions }
-            .distinctBy { it._id.toHexString() }
-            .toList()
-    val myAddresses = user.accounts.map { it._id.toHexString() }
+    val transactions = user.transactions
+
+    val myAddresses = user.myAddresses
     call.respondHtmlTemplate(DefaultTemplate()) {
         content {
             h1 { +"Первый новояпонский банк" }

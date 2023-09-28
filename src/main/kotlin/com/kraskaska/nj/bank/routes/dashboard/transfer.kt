@@ -1,4 +1,4 @@
-package com.kraskaska.nj.bank.routes.dashboard.accounts
+package com.kraskaska.nj.bank.routes.dashboard
 
 import com.kraskaska.nj.bank.*
 import io.ktor.server.application.*

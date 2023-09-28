@@ -19,6 +19,7 @@ fun Routing.configureAdminRouting() {
         get("/admin/deposit", adminDeposit)
         get("/admin/withdraw", adminWithdraw)
         get("/admin/pay-interest", adminPayInterest)
+        get("/admin/inspection", adminInspection)
     }
 }
 

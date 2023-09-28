@@ -27,9 +27,14 @@ data class DiscordSession(val state: String, val token: String) : Principal {
     val id: Long get() = oauthMe["user"]!!.jsonObject["id"]!!.jsonPrimitive.long
 }
 
+/** User made from discord session */
 class DiscordUser(val session: DiscordSession) : User(session.id)
 
 open class User(val id: Long) {
+    val transactions get() = accounts.map { it.transactions }
+        .fold(listOf<Transaction>()) { acc, transactions -> acc + transactions }
+        .distinctBy { it._id.toHexString() }
+        .toList()
     val userDocument
         get() = runBlocking {
             mongoClient.getCollection<Document>("users").find(Filters.eq("uid", id)).singleOrNull()
@@ -58,6 +63,8 @@ open class User(val id: Long) {
             mongoClient.getCollection<Account>("accounts")
                 .find(Filters.eq("ownerId", id)).toList()
         }
+
+    val myAddresses = accounts.map { it._id.toHexString() }
 
     val balance: CurrencyPeni get() = accounts.map { it.balance }.sum()
 
