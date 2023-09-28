@@ -25,6 +25,9 @@ import org.slf4j.LoggerFactory
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
+import kotlin.time.DurationUnit
+import kotlin.time.toDuration
+import kotlin.time.toJavaDuration
 
 val env = dotenv { ignoreIfMissing = true }
 
@@ -68,7 +71,10 @@ fun Routing.configureAuth() {
 fun main(args: Array<String>) {
     val logger = LoggerFactory.getLogger("main")
     if ((env["FORCE_CLOCK"]?.toLongOrNull() ?: -1) >= 0) {
-        clock = Clock.fixed(Instant.ofEpochMilli(env["FORCE_CLOCK"]!!.toLong()), ZoneId.of("UTC"))
+        clock = Clock.offset(
+            Clock.systemDefaultZone(),
+            (env["FORCE_CLOCK"]!!.toLong() - System.currentTimeMillis()).toDuration(DurationUnit.MILLISECONDS).toJavaDuration()
+        )
         logger.info("Clock forced to ${env["FORCE_CLOCK"]!!.toLong()}")
     }
     embeddedServer(Netty, port = env["PORT"].toInt()) {
