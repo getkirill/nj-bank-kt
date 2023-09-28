@@ -1,4 +1,4 @@
-package com.kraskaska.nj.bank.routes.dashboard.loan
+package com.kraskaska.nj.bank.routes.dashboard.loans
 
 import com.kraskaska.nj.bank.*
 import com.kraskaska.nj.bank.clock.clock

@@ -106,7 +106,7 @@ data class Loan(
     val amount: CurrencyPeni,
     val interest: Double,
     val expiryDate: Long,
-    val expiredInterest: Double = interest * interest,
+    val expiredInterest: Double = (1 + interest) * (1 + interest),
 ) {
     fun moneyToBePaidAt(timestamp: Long): Long {
         val expiryProgress =
@@ -126,6 +126,7 @@ data class Loan(
         }
     }
 
+    val paidOff: Long get() = Account.get(loanAccount)!!.balance
     val paidOffAt: Long?
         get() {
             val acc = Account.get(loanAccount)!!
@@ -143,12 +144,16 @@ data class Loan(
         fun allLinkedTo(accountId: ObjectId): Iterable<Loan> = runBlocking {
             mongoClient.getCollection<Loan>("loans").find(Filters.eq("payerAccount", accountId)).toList()
         }
+
+        fun get(id: ObjectId): Loan? = runBlocking {
+            mongoClient.getCollection<Loan>("loans").find(Filters.eq("_id", id)).singleOrNull()
+        }
     }
 
     fun submit() = runBlocking {
         Account.get(loanAccount)!!.run {
             deposit(amount) { "loan:${_id.toHexString()}" }
-            transferTo(payerAccount, amount, "пополнение кредита")
+            transferTo(payerAccount, amount, "пополнение кредита", force = true)
         }
         mongoClient.getCollection<Loan>("loans").insertOne(this@Loan)
     }

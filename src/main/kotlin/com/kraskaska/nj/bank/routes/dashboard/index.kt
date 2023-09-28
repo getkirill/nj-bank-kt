@@ -5,8 +5,10 @@ import com.kraskaska.nj.bank.DiscordSession
 import com.kraskaska.nj.bank.RouteHandler
 import com.kraskaska.nj.bank.okaneSymbol
 import com.kraskaska.nj.bank.routes.dashboard.accounts.*
-import com.kraskaska.nj.bank.routes.dashboard.loan.loanIndex
-import com.kraskaska.nj.bank.routes.dashboard.loan.newLoan
+import com.kraskaska.nj.bank.routes.dashboard.loans.loanIndex
+import com.kraskaska.nj.bank.routes.dashboard.loans.loanPay
+import com.kraskaska.nj.bank.routes.dashboard.loans.loanPayoff
+import com.kraskaska.nj.bank.routes.dashboard.loans.newLoan
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.html.*
@@ -26,6 +28,8 @@ fun Routing.configureDashboardRouting() {
         get("/dashboard/transactions", accountTransactions)
         get("/dashboard/loans", loanIndex)
         get("/dashboard/loans/new", newLoan)
+        get("/dashboard/loans/pay", loanPay)
+        get("/dashboard/loans/payoff", loanPayoff)
     }
 }
 
