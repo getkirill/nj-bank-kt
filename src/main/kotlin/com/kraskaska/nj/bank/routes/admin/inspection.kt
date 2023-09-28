@@ -129,6 +129,50 @@ val adminInspection: RouteHandler = handler@{
                     submitInput { value = "Добавить" }
                 }
             }
+            details {
+                summary { +"Modify account" }
+                form {
+                    p {
+                        +"Account: "
+                        select {
+                            name = "account"
+                            if (inspectedUser.accounts.toList().isEmpty()) {
+                                disabled = true
+                                option {
+                                    value = "no-account";
+                                    +"Нет доступных счетов!"
+                                }
+                            } else inspectedUser.accounts.forEach {
+                                option {
+                                    value = it._id.toHexString()
+                                    +"${it.name} - ${it._id.toHexString()} - ${"%.2f".format(it.balance / 32.0)} $okaneSymbol"
+                                }
+                            }
+                        }
+                    }
+                    p { +"New name: "; textInput(name = "name") { placeholder = "(unmodified)" } }
+                    p {
+                        +"New type: "
+                        select {
+                            name = "type"
+                            option() {
+                                value = "unmodified"
+                                selected = true
+                                +"(unmodified)"
+                            }
+                            option {
+                                value = "checking"
+                                +"checking"
+                            }
+                            option {
+                                value = "savings"
+                                +"savings"
+                            }
+                        }
+                    }
+                    submitInput()
+                }
+            }
             if (inspectedUser.accounts.toList().isEmpty()) {
                 p { +"У вас нет счетов." }
             } else {
@@ -264,6 +308,10 @@ val adminInspection: RouteHandler = handler@{
                                 ) "positive-transaction" else ""
                             ) { +"${"%.2f".format(it.amount / 32.0)} $okaneSymbol" }
                             if (it.message != null) +" - ${it.message}"
+                            +" ("
+                            a { +"Revert" }
+                            +" "
+                            a { +"Delete" }
                         }
                     }
                 }
