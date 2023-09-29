@@ -115,7 +115,7 @@ data class Loan(
     val amount: CurrencyPeni,
     val interest: Double,
     val expiryDate: Long,
-    val expiredInterest: Double = (1 + interest) * (1 + interest),
+    val expiredInterest: Double = (1 + interest) * (1 + interest) - 1,
 ) {
     fun moneyToBePaidAt(timestamp: Long): Long {
         val expiryProgress =

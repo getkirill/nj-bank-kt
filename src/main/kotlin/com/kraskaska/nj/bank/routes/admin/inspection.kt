@@ -250,7 +250,8 @@ val adminInspection: RouteHandler = handler@{
                 summary {
                     +"New loan"
                 }
-                form {
+                form(action = "/admin/inspection/new-loan") {
+                    uid(call.request.queryParameters["uid"]!!)
                     p {
                         +"Счёт получения и оплаты:"
                         select {
@@ -272,15 +273,16 @@ val adminInspection: RouteHandler = handler@{
                     p {
                         +"Сумма: "
                         numberInput(name = "amount") {
-                            min = "10000"
-                            max = "100000"
+                            min = "1"
+//                            max = "100000"
+                            step = "any"
                             required = true
                         }
                     }
                     p {
                         +"Процент: "
                         numberInput(name = "interest") {
-                            min = "10"
+                            min = "1"
 //                        max = "100"
                             step = "any"
                             required = true
@@ -290,8 +292,8 @@ val adminInspection: RouteHandler = handler@{
                     p {
                         +"Срок: "
                         numberInput(name = "duration") {
-                            min = "7"
-                            max = "90"
+                            min = "1"
+//                            max = "90"
                             step = "any"
                             required = true
                         }
@@ -445,6 +447,7 @@ val inspectionDeleteAccount: RouteHandler = handler@{
         }
     }
 }
+
 // /admin/inspection/transfer
 val inspectionAccountTransfer: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
@@ -461,6 +464,7 @@ val inspectionAccountTransfer: RouteHandler = handler@{
     call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
 //    val inspectedUser = User(call.request.queryParameters["uid"]!!.toLong())
 }
+
 // /admin/inspection/change-funds
 val inspectionChangeFunds: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
@@ -472,13 +476,14 @@ val inspectionChangeFunds: RouteHandler = handler@{
     val to = Account.get(ObjectId(call.request.queryParameters["to"]!!))!!
     val amount = (call.request.queryParameters["amount"]!!.toDouble() * 32).roundToLong()
     val action = call.request.queryParameters["action"]!!
-    when(action) {
+    when (action) {
         "deposit" -> to.deposit(amount)
         "withdraw" -> to.withdraw(amount)
         else -> TODO()
     }
     call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
 }
+
 // /admin/inspection/modify-account
 val inspectionModifyAccount: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
@@ -489,7 +494,30 @@ val inspectionModifyAccount: RouteHandler = handler@{
     }
     val account = Account.get(ObjectId(call.request.queryParameters["account"]!!))!!
     val name = call.request.queryParameters["name"]!!.ifBlank { null } ?: account.name
-    val type = call.request.queryParameters["type"]!!.run { if(this == "unmodified") null else this } ?: account.type.toString()
-    account.modify(name, mapOf("checking" to Account.AccountType.CHECKING, "savings" to Account.AccountType.SAVINGS)[type]!!)
+    val type = call.request.queryParameters["type"]!!.run { if (this == "unmodified") null else this }
+        ?: account.type.toString()
+    account.modify(
+        name,
+        mapOf("checking" to Account.AccountType.CHECKING, "savings" to Account.AccountType.SAVINGS)[type]!!
+    )
     call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
+}
+
+// /admin/inspection/new-loan
+val inspectionNewLoan: RouteHandler = handler@{
+    val session = call.sessions.get<DiscordSession>()!!
+    val adminUser = session.toUser()
+    if (!adminUser.isAdmin) {
+        call.respondRedirect("/admin")
+        return@handler
+    }
+    val loan = Loan(
+        payerAccount = ObjectId(call.request.queryParameters["account"]!!),
+        amount = (call.request.queryParameters["amount"]!!.toDouble() * 32).roundToLong(),
+        interest = call.request.queryParameters["interest"]!!.toLong() / 100.0,
+        expiryDate = clock.millis() + (call.request.queryParameters["duration"]!!.toLong() * 24 * 60 * 60 * 1000)
+    )
+    loan.submit()
+    call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
+    return@handler
 }

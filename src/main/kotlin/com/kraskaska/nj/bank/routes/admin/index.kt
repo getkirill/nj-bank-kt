@@ -26,6 +26,7 @@ fun Routing.configureAdminRouting() {
         get("/admin/inspection/transfer", inspectionAccountTransfer)
         get("/admin/inspection/change-funds", inspectionChangeFunds)
         get("/admin/inspection/modify-account", inspectionModifyAccount)
+        get("/admin/inspection/new-loan", inspectionNewLoan)
     }
 }
 
