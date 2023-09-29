@@ -7,8 +7,14 @@ import io.ktor.server.html.*
 import io.ktor.server.response.*
 import io.ktor.server.sessions.*
 import kotlinx.html.*
+import org.bson.types.ObjectId
+import kotlin.math.roundToLong
 
 val adminInspection: RouteHandler = handler@{
+    fun FORM.uid(data: String) {
+        hiddenInput(name = "uid") { value = data }
+    }
+
     val session = call.sessions.get<DiscordSession>()!!
     val adminUser = session.toUser()
     if (!adminUser.isAdmin) {
@@ -24,14 +30,28 @@ val adminInspection: RouteHandler = handler@{
     call.respondHtmlTemplate(DefaultTemplate()) {
         content {
             h1 { +"Inspection of ${inspectedUser.id}" }
-            code {
-                pre {
-                    +"""
-                        admin = ${inspectedUser.isAdmin}
-                        balance = ${inspectedUser.balance}
-                        defaultAccount = ${inspectedUser.defaultAccount?.toHexString()}
-                    """.trimIndent()
+            form(action = "/admin/inspection/set-user-props") {
+                uid(inspectedUser.id.toString())
+                p {
+                    checkBoxInput(name = "admin") { checked = inspectedUser.isAdmin }
+                    +" Admin"
                 }
+                if (inspectedUser.accounts.toList().size > 1) {
+                    p {
+                        span { title = "Этот счёт будет конечным для переводов по нику."; +"Default: " }
+                        select {
+                            name = "default-account";
+                            inspectedUser.accounts.forEach {
+                                option {
+                                    value = it._id.toHexString()
+                                    if (it._id == inspectedUser.defaultAccount) selected = true;
+                                    +"${it.name} - ${it._id.toHexString()} - ${"%.2f".format(it.balance / 32.0)} $okaneSymbol"
+                                }
+                            }
+                        }
+                    }
+                }
+                submitInput { value = "Save" }
             }
             details {
                 summary { +"Freeze user" }
@@ -43,7 +63,8 @@ val adminInspection: RouteHandler = handler@{
             h2 { +"Accounts" }
             details {
                 summary { +"Create new" }
-                form {
+                form(action = "/admin/inspection/new-account") {
+                    uid(inspectedUser.id.toString())
                     p {
                         +"Type: ";
                         select {
@@ -67,7 +88,8 @@ val adminInspection: RouteHandler = handler@{
             }
             details {
                 summary { +"Transfer" }
-                form {
+                form(action = "/admin/inspection/transfer") {
+                    uid(call.request.queryParameters["uid"]!!)
                     p {
                         +"Счёт отправки: "
                         select {
@@ -110,7 +132,8 @@ val adminInspection: RouteHandler = handler@{
             }
             details {
                 summary { +"Add/remove funds" }
-                form {
+                form(action = "/admin/inspection/change-funds") {
+                    uid(call.request.queryParameters["uid"]!!)
                     p {
                         select {
                             name = "action"
@@ -125,13 +148,41 @@ val adminInspection: RouteHandler = handler@{
                         }
                         +" funds"
                     }
-                    p { +"Количество (Peni, 1/32 okane): "; numberInput(name = "amount") { min = "0" } }
-                    submitInput { value = "Добавить" }
+                    p {
+                        +"Account: "
+                        select {
+                            name = "to"
+                            if (inspectedUser.accounts.toList().isEmpty()) {
+                                disabled = true
+                                option {
+                                    value = "no-accounts"
+                                    +"Нет доступных счетов!"
+                                }
+                            }
+                            inspectedUser.accounts.forEach {
+                                option {
+                                    value = it._id.toHexString()
+                                    +"${it.name} - ${it._id.toHexString()} - ${"%.2f".format(it.balance / 32.0)} $okaneSymbol"
+                                }
+                            }
+                        }
+                    }
+                    p {
+                        +"Размер: "
+                        numberInput(name = "amount") {
+                            min = "0.03"
+                            step = ".01"
+                            required = true
+                        }
+                        +" $okaneSymbol"
+                    }
+                    submitInput()
                 }
             }
             details {
                 summary { +"Modify account" }
-                form {
+                form(action = "/admin/inspection/modify-account") {
+                    uid(call.request.queryParameters["uid"]!!)
                     p {
                         +"Account: "
                         select {
@@ -186,7 +237,7 @@ val adminInspection: RouteHandler = handler@{
                             )[it.type.toString()]
                         } - ${"%.2f".format(it.balance / 32.0)} $okaneSymbol "
                             span {
-                                +"(";a(href = "/dashboard/accounts/delete/${it._id.toHexString()}") { +"Удалить" };/*+" ";a(
+                                +"(";a(href = "/admin/inspection/delete-account?id=${it._id.toHexString()}&uid=${call.request.queryParameters["uid"]!!}") { +"Удалить" };/*+" ";a(
                                                 href = "/dashboard/accounts/edit/${it._id.toHexString()}"
                                             ) { +"Переименовать" };*/+")"
                             }
@@ -318,4 +369,127 @@ val adminInspection: RouteHandler = handler@{
             }
         }
     }
+}
+
+// /admin/inspection/set-user-props
+val inspectionSetUserProps: RouteHandler = handler@{
+    val session = call.sessions.get<DiscordSession>()!!
+    val adminUser = session.toUser()
+    if (!adminUser.isAdmin) {
+        call.respondRedirect("/admin")
+        return@handler
+    }
+    val inspectedUser = User(call.request.queryParameters["uid"]!!.toLong())
+    inspectedUser.isAdmin = call.request.queryParameters["admin"] == "on"
+    inspectedUser.defaultAccount = ObjectId(call.request.queryParameters["default-account"]!!)
+    call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
+}
+
+// /admin/inspection/new-account
+val inspectionNewAccount: RouteHandler = handler@{
+    val session = call.sessions.get<DiscordSession>()!!
+    val adminUser = session.toUser()
+    if (!adminUser.isAdmin) {
+        call.respondRedirect("/admin")
+        return@handler
+    }
+    val inspectedUser = User(call.request.queryParameters["uid"]!!.toLong())
+    inspectedUser.createAccount(
+        mapOf(
+            "savings" to Account.AccountType.SAVINGS,
+            "checking" to Account.AccountType.CHECKING
+        )[call.request.queryParameters["type"]!!]!!, call.request.queryParameters["name"]!!
+    )
+    call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
+}
+
+// /admin/inspection/delete-account
+val inspectionDeleteAccount: RouteHandler = handler@{
+    val session = call.sessions.get<DiscordSession>()!!
+    val adminUser = session.toUser()
+    if (!adminUser.isAdmin) {
+        call.respondRedirect("/admin")
+        return@handler
+    }
+//    val inspectedUser = User(call.request.queryParameters["uid"]!!.toLong())
+    val account = Account.get(ObjectId(call.parameters["id"]!!))!!
+    if (call.request.queryParameters.contains("confirm")) {
+        account.delete()
+        call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
+        return@handler
+    }
+    call.respondHtmlTemplate(DefaultTemplate()) {
+        content {
+            h1 { +"Первый новояпонский банк" }
+            crumbBar(
+                listOf(
+                    "Панель управления" to "/dashboard",
+                    "Счета" to "/dashboard/accounts",
+                    "Удалить счет" to "#"
+                )
+            )
+            h2 {
+                +"Удаление счета ${account.name} ("; code { +account._id.toHexString() };+")"
+            }
+            p { +"Вы уверены, что хотите удалить счёт?" }
+            p(classes = "danger") { +"Все средства, оставшиеся на счету, будут утеряны!" }
+            (List(9) { "Нет" } + listOf("Да")).shuffled().map {
+                a(
+                    classes = "action",
+                    href = mapOf(
+                        "Нет" to "/admin/inspection?uid=${call.parameters["uid"]!!}",
+                        "Да" to "/admin/inspection/delete-account?id=${call.parameters["id"]!!}&uid=${call.parameters["uid"]!!}&confirm"
+                    )[it]
+                ) { +it }
+            }
+        }
+    }
+}
+// /admin/inspection/transfer
+val inspectionAccountTransfer: RouteHandler = handler@{
+    val session = call.sessions.get<DiscordSession>()!!
+    val adminUser = session.toUser()
+    if (!adminUser.isAdmin) {
+        call.respondRedirect("/admin")
+        return@handler
+    }
+    val from = Account.get(ObjectId(call.request.queryParameters["from"]!!))!!
+    val to = ObjectId(call.request.queryParameters["to"]!!)
+    val amount = (call.request.queryParameters["amount"]!!.toDouble() * 32).roundToLong()
+    val message = call.request.queryParameters["message"]
+    from.transferTo(to, amount, message)
+    call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
+//    val inspectedUser = User(call.request.queryParameters["uid"]!!.toLong())
+}
+// /admin/inspection/change-funds
+val inspectionChangeFunds: RouteHandler = handler@{
+    val session = call.sessions.get<DiscordSession>()!!
+    val adminUser = session.toUser()
+    if (!adminUser.isAdmin) {
+        call.respondRedirect("/admin")
+        return@handler
+    }
+    val to = Account.get(ObjectId(call.request.queryParameters["to"]!!))!!
+    val amount = (call.request.queryParameters["amount"]!!.toDouble() * 32).roundToLong()
+    val action = call.request.queryParameters["action"]!!
+    when(action) {
+        "deposit" -> to.deposit(amount)
+        "withdraw" -> to.withdraw(amount)
+        else -> TODO()
+    }
+    call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
+}
+// /admin/inspection/modify-account
+val inspectionModifyAccount: RouteHandler = handler@{
+    val session = call.sessions.get<DiscordSession>()!!
+    val adminUser = session.toUser()
+    if (!adminUser.isAdmin) {
+        call.respondRedirect("/admin")
+        return@handler
+    }
+    val account = Account.get(ObjectId(call.request.queryParameters["account"]!!))!!
+    val name = call.request.queryParameters["name"]!!.ifBlank { null } ?: account.name
+    val type = call.request.queryParameters["type"]!!.run { if(this == "unmodified") null else this } ?: account.type.toString()
+    account.modify(name, mapOf("checking" to Account.AccountType.CHECKING, "savings" to Account.AccountType.SAVINGS)[type]!!)
+    call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
 }

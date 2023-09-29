@@ -1,6 +1,7 @@
 package com.kraskaska.nj.bank
 
 import com.mongodb.client.model.Filters
+import com.mongodb.client.model.Updates
 import com.mongodb.kotlin.client.coroutine.MongoClient
 import kotlinx.coroutines.flow.singleOrNull
 import kotlinx.coroutines.flow.toList
@@ -53,15 +54,23 @@ data class Account(val ownerId: Long, val type: AccountType, val name: String, v
         }
     }
 
-    fun withdraw(amount: CurrencyPeni) {
+    fun withdraw(amount: CurrencyPeni, message: (Transaction) -> String = { "обналичивание средств" }) {
+        val t = Transaction(from = _id, amount = amount).run { copy(message = message(this)) }
         runBlocking {
-            mongoClient.getCollection<Transaction>("transactions")
-                .insertOne(Transaction(from = _id, amount = amount, message = "обналичивание средств"))
+            mongoClient.getCollection<Transaction>("transactions").insertOne(t)
         }
     }
 
     fun delete() {
         runBlocking { mongoClient.getCollection<Transaction>("accounts").deleteOne(Filters.eq("_id", _id)) }
+    }
+
+    fun modify(name: String = this.name, type: AccountType = this.type) = runBlocking {
+        mongoClient.getCollection<Account>("accounts").findOneAndUpdate(
+            Filters.eq("_id", _id),
+            Updates.combine(Updates.set("name", name), Updates.set("type", type))
+        )
+        copy(name = name, type = type)
     }
 
     companion object {

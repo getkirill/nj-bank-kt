@@ -70,10 +70,13 @@ open class User(val id: Long) {
 
     fun createAccount(type: Account.AccountType, name: String) = Account.create(id, type, name)
 
-    val isAdmin
+    var isAdmin
         get() = runBlocking {
             mongoClient.getCollection<Document>("users").find(Filters.eq("uid", id)).singleOrNull()?.getBoolean("admin")
                 ?: false
+        }
+        set(value) = runBlocking {
+            mongoClient.getCollection<Document>("users").findOneAndUpdate(Filters.eq("uid", id), Updates.set("admin", value))
         }
 
     val loansTaken get() = accounts.map { Loan.allLinkedTo(it._id) }.flatten()

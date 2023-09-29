@@ -20,6 +20,12 @@ fun Routing.configureAdminRouting() {
         get("/admin/withdraw", adminWithdraw)
         get("/admin/pay-interest", adminPayInterest)
         get("/admin/inspection", adminInspection)
+        get("/admin/inspection/set-user-props", inspectionSetUserProps)
+        get("/admin/inspection/new-account", inspectionNewAccount)
+        get("/admin/inspection/delete-account", inspectionDeleteAccount)
+        get("/admin/inspection/transfer", inspectionAccountTransfer)
+        get("/admin/inspection/change-funds", inspectionChangeFunds)
+        get("/admin/inspection/modify-account", inspectionModifyAccount)
     }
 }
 
