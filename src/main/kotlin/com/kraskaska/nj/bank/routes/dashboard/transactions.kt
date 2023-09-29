@@ -8,7 +8,7 @@ import kotlinx.html.*
 
 val accountTransactions: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     val transactions = user.transactions
 
     val myAddresses = user.myAddresses

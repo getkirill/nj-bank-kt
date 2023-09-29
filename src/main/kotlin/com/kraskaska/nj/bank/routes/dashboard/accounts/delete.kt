@@ -10,7 +10,7 @@ import org.bson.types.ObjectId
 
 val deleteAccount: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     val account = Account.get(ObjectId(call.parameters["id"]!!))!!
     if (user.id != account.ownerId && !user.isAdmin) {
         call.respondHtmlTemplate(DefaultTemplate()) {

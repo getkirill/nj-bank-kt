@@ -39,7 +39,7 @@ fun saveErrorForInspection(throwable: Throwable, session: DiscordSession? = null
     log.info("Saving under ${uuid}.report...")
     folder.toPath().resolve("${uuid}.report").toFile().writeText("""
         |Time: ${System.currentTimeMillis()} (clock: ${clock.millis()})
-        |User: ${if(session?.toUser() != null) "${session.name} (uid: ${session.toUser().id})" else "not reported/invalid"}
+        |User: ${if(session?.toBankUser() != null) "${session.toProfile().name} (uid: ${session.toBankUser().id})" else "not reported/invalid"}
         |Exception log:
         ${throwable.stackTraceToString().lines().map { "|$it" }.joinToString("\n")}
     """.trimMargin("|"))

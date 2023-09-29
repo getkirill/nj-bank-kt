@@ -16,12 +16,12 @@ val adminInspection: RouteHandler = handler@{
     }
 
     val session = call.sessions.get<DiscordSession>()!!
-    val adminUser = session.toUser()
+    val adminUser = session.toBankUser()
     if (!adminUser.isAdmin) {
         call.respondRedirect("/admin")
         return@handler
     }
-    val inspectedUser = call.request.queryParameters["uid"]?.toLongOrNull()?.let { User(it) }
+    val inspectedUser = call.request.queryParameters["uid"]?.toLongOrNull()?.let { BankUser(it) }
     if (inspectedUser == null) {
         call.respond("User not found or invalid or you are dumbass and did not supply uid.")
         return@handler
@@ -376,12 +376,12 @@ val adminInspection: RouteHandler = handler@{
 // /admin/inspection/set-user-props
 val inspectionSetUserProps: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val adminUser = session.toUser()
+    val adminUser = session.toBankUser()
     if (!adminUser.isAdmin) {
         call.respondRedirect("/admin")
         return@handler
     }
-    val inspectedUser = User(call.request.queryParameters["uid"]!!.toLong())
+    val inspectedUser = BankUser(call.request.queryParameters["uid"]!!.toLong())
     inspectedUser.isAdmin = call.request.queryParameters["admin"] == "on"
     inspectedUser.defaultAccount = ObjectId(call.request.queryParameters["default-account"]!!)
     call.respondRedirect("/admin/inspection?uid=${call.request.queryParameters["uid"]!!}")
@@ -390,12 +390,12 @@ val inspectionSetUserProps: RouteHandler = handler@{
 // /admin/inspection/new-account
 val inspectionNewAccount: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val adminUser = session.toUser()
+    val adminUser = session.toBankUser()
     if (!adminUser.isAdmin) {
         call.respondRedirect("/admin")
         return@handler
     }
-    val inspectedUser = User(call.request.queryParameters["uid"]!!.toLong())
+    val inspectedUser = BankUser(call.request.queryParameters["uid"]!!.toLong())
     inspectedUser.createAccount(
         mapOf(
             "savings" to Account.AccountType.SAVINGS,
@@ -408,7 +408,7 @@ val inspectionNewAccount: RouteHandler = handler@{
 // /admin/inspection/delete-account
 val inspectionDeleteAccount: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val adminUser = session.toUser()
+    val adminUser = session.toBankUser()
     if (!adminUser.isAdmin) {
         call.respondRedirect("/admin")
         return@handler
@@ -451,7 +451,7 @@ val inspectionDeleteAccount: RouteHandler = handler@{
 // /admin/inspection/transfer
 val inspectionAccountTransfer: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val adminUser = session.toUser()
+    val adminUser = session.toBankUser()
     if (!adminUser.isAdmin) {
         call.respondRedirect("/admin")
         return@handler
@@ -468,7 +468,7 @@ val inspectionAccountTransfer: RouteHandler = handler@{
 // /admin/inspection/change-funds
 val inspectionChangeFunds: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val adminUser = session.toUser()
+    val adminUser = session.toBankUser()
     if (!adminUser.isAdmin) {
         call.respondRedirect("/admin")
         return@handler
@@ -487,7 +487,7 @@ val inspectionChangeFunds: RouteHandler = handler@{
 // /admin/inspection/modify-account
 val inspectionModifyAccount: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val adminUser = session.toUser()
+    val adminUser = session.toBankUser()
     if (!adminUser.isAdmin) {
         call.respondRedirect("/admin")
         return@handler
@@ -506,7 +506,7 @@ val inspectionModifyAccount: RouteHandler = handler@{
 // /admin/inspection/new-loan
 val inspectionNewLoan: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val adminUser = session.toUser()
+    val adminUser = session.toBankUser()
     if (!adminUser.isAdmin) {
         call.respondRedirect("/admin")
         return@handler

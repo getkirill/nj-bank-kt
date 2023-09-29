@@ -16,7 +16,7 @@ import org.bson.types.ObjectId
 
 val adminWithdraw: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     if (!user.isAdmin) {
         call.respondRedirect("/admin")
         return@handler

@@ -10,7 +10,7 @@ import kotlinx.html.*
 
 val newAccount: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     if (!listOf("checking", "savings").contains(call.parameters["type"])) {
         call.respond(HttpStatusCode.NotFound, "Not found.")
         return@handler

@@ -19,7 +19,7 @@ import kotlinx.html.*
 import org.bson.types.ObjectId
 
 fun Routing.configureDashboardRouting() {
-    authenticate("discord-auth", "session-auth") {
+    authenticate("session-auth") {
         get("/dashboard", dashboardHome)
         get("/dashboard/accounts", dashboardAccounts)
         get("/dashboard/accounts/new/{type}", newAccount)
@@ -35,7 +35,7 @@ fun Routing.configureDashboardRouting() {
 
 val dashboardHome: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     if(call.request.queryParameters["set-default-account"] != null) {
         user.defaultAccount = ObjectId(call.request.queryParameters["set-default-account"])
         call.respondRedirect("/dashboard")
@@ -44,7 +44,7 @@ val dashboardHome: RouteHandler = handler@{
     call.respondHtmlTemplate(DefaultTemplate()) {
         content {
             h1 { +"Первый новояпонский банк" }
-            p { +user.session.name }
+            p { +user.session.toProfile().name }
             p { +"Баланс: ${"%.2f".format(user.balance / 32.0)} $okaneSymbol" }
             if(user.accounts.toList().size > 1) form {
                 p {

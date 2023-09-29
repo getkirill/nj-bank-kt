@@ -9,7 +9,7 @@ import kotlinx.html.*
 
 val loanIndex: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     call.respondHtmlTemplate(DefaultTemplate()) {
         content {
             h1 { +"Первый новояпонский банк" }

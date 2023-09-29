@@ -23,8 +23,6 @@ import io.ktor.server.sessions.*
 import kotlinx.html.*
 import org.slf4j.LoggerFactory
 import java.time.Clock
-import java.time.Instant
-import java.time.ZoneId
 import kotlin.time.DurationUnit
 import kotlin.time.toDuration
 import kotlin.time.toJavaDuration
@@ -51,7 +49,7 @@ class DefaultTemplate : Template<HTML> {
 }
 
 fun Routing.configureAuth() {
-    authenticate("discord-auth", "session-auth") {
+    authenticate("discord-auth") {
         get("/login") {
             call.respondRedirect("/")
         }
@@ -138,7 +136,7 @@ fun main(args: Array<String>) {
             }
             get("/") {
                 val session = call.sessions.get<DiscordSession>()
-                val user = session?.toUser()
+                val user = session?.toBankUser()
                 val loggedIn = session != null
                 call.respondHtmlTemplate(DefaultTemplate()) {
                     content {

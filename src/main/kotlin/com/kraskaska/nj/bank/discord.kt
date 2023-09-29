@@ -13,10 +13,14 @@ import org.bson.Document
 import org.bson.types.ObjectId
 
 data class DiscordSession(val state: String, val token: String) : Principal {
-    fun toUser() = DiscordUser(this)
+    fun toBankUser() = DiscordBankUser(this)
+    fun toProfile() = DiscordProfile(this)
+}
+
+class DiscordProfile(val session: DiscordSession) {
     val oauthMe by lazy {
         runBlocking {
-            httpClient.get("https://discord.com/api/oauth2/@me") { bearerAuth(token) }.body<JsonObject>()
+            httpClient.get("https://discord.com/api/oauth2/@me") { bearerAuth(session.token) }.body<JsonObject>()
         }
     }
     val username: String get() = oauthMe["user"]!!.jsonObject["username"]!!.jsonPrimitive.content
@@ -28,9 +32,9 @@ data class DiscordSession(val state: String, val token: String) : Principal {
 }
 
 /** User made from discord session */
-class DiscordUser(val session: DiscordSession) : User(session.id)
+class DiscordBankUser(val session: DiscordSession) : BankUser(session.toProfile().id)
 
-open class User(val id: Long) {
+open class BankUser(val id: Long) {
     val transactions get() = accounts.map { it.transactions }
         .fold(listOf<Transaction>()) { acc, transactions -> acc + transactions }
         .distinctBy { it._id.toHexString() }

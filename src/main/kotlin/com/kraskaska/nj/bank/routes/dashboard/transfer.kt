@@ -11,7 +11,7 @@ import kotlin.math.roundToLong
 
 val accountTransfer: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     if (call.request.queryParameters["from"] != null && call.request.queryParameters["from"] != "no-accounts" && call.request.queryParameters["to"] != null && call.request.queryParameters["amount"] != null) {
         val from = Account.get(ObjectId(call.request.queryParameters["from"]!!))!!
         if (

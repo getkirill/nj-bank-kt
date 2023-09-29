@@ -8,7 +8,7 @@ import kotlinx.html.*
 
 val dashboardAccounts: RouteHandler = {
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     val accounts = user.accounts
 //        if (user.isAdmin && call.request.queryParameters["of"] != null) Account.byOwner(call.request.queryParameters["of"]!!.toLong()) else user.accounts
     call.respondHtmlTemplate(DefaultTemplate()) {

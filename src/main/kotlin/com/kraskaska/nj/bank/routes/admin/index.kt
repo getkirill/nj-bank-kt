@@ -1,20 +1,16 @@
 package com.kraskaska.nj.bank.routes.admin
 
 import com.kraskaska.nj.bank.*
-import com.mongodb.client.model.Filters
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.auth.*
 import io.ktor.server.html.*
-import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import io.ktor.server.sessions.*
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.runBlocking
 import kotlinx.html.*
 
 fun Routing.configureAdminRouting() {
-    authenticate("discord-auth", "session-auth") {
+    authenticate("session-auth") {
         get("/admin", adminHome)
         get("/admin/deposit", adminDeposit)
         get("/admin/withdraw", adminWithdraw)
@@ -32,7 +28,7 @@ fun Routing.configureAdminRouting() {
 
 val adminHome: RouteHandler = handler@{
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     if (!user.isAdmin) {
         call.respondHtmlTemplate(DefaultTemplate(), HttpStatusCode.Forbidden) {
             content {

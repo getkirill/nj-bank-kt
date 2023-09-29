@@ -13,7 +13,7 @@ import kotlin.math.roundToLong
 val newLoan: RouteHandler = handler@{
     TODO("THIS IS NOT THE WAY")
     val session = call.sessions.get<DiscordSession>()!!
-    val user = session.toUser()
+    val user = session.toBankUser()
     if (call.request.queryParameters["amount"] != null && call.request.queryParameters["interest"] != null && call.request.queryParameters["duration"] != null && call.request.queryParameters["account"] != null && call.request.queryParameters["account"] != "no-account") {
         val loan = Loan(
             payerAccount = ObjectId(call.request.queryParameters["account"]),
