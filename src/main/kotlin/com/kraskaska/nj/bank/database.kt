@@ -129,7 +129,7 @@ data class Loan(
             timestamp > expiryDate -> (amount * (1 + interest + Math.pow(
                 1 + expiredInterest,
                 overExpiryDays
-            ))).roundToLong()
+            )-1)).roundToLong()
 
             else -> TODO()
         }
